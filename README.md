@@ -1,4 +1,4 @@
-Flickster Movie API Project
+# FLICKSTER Movie API Project
 This is a movie discovery web application that fetches data from The Movie Database (TMDB) API. Users can explore popular movies, search for movies by title, filter movies by genre, and view movie details such as overviews, release dates, ratings, and more.
 
 Features
