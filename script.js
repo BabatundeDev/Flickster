@@ -9,40 +9,6 @@ const options = {
 
 const container = document.getElementById("movie-container");
 const searchInput = document.getElementById("searchInput");
-const genreContainer = document.getElementById("genre-container");
-const popularSlider = document.getElementById("popular-slider");
-
-// Fetch genres from the TMDB API
-fetch("https://api.themoviedb.org/3/genre/movie/list?language=en-US", options)
-  .then((res) => res.json())
-  .then((res) => {
-    const genres = res.genres;
-    genres.forEach((genre) => {
-      const genreButton = document.createElement("button");
-      genreButton.textContent = genre.name;
-      genreButton.classList.add("genre-button");
-      genreButton.setAttribute("data-genre-id", genre.id);
-      genreContainer.appendChild(genreButton);
-    });
-  })
-  .catch((err) => console.log(err));
-
-// Fetch and display movies based on selected genre
-genreContainer.addEventListener("click", (e) => {
-  if (e.target.classList.contains("genre-button")) {
-    const genreId = e.target.getAttribute("data-genre-id");
-    const genreName = e.target.textContent;
-
-    // Update heading
-    document.getElementById("genreTitle").textContent = `${genreName} Movies`;
-
-    // Hide popular movies section and its heading when genre is clicked
-    document.getElementById("popular-slider").classList.add("hide-popular");
-    document.querySelector(".section-title").classList.add("hide-popular");
-
-    fetchMoviesByGenre(genreId);
-  }
-});
 
 // Reset the popular movies section and its heading when no genre is selected
 document.addEventListener("DOMContentLoaded", () => {
@@ -52,55 +18,22 @@ document.addEventListener("DOMContentLoaded", () => {
   document.querySelector(".section-title").classList.remove("hide-popular");
 });
 
-// Fetch movies by genre
-function fetchMoviesByGenre(genreId) {
-  fetch(
-    `https://api.themoviedb.org/3/discover/movie?with_genres=${genreId}&language=en-US&page=1`,
-    options
-  )
-    .then((res) => res.json())
-    .then((res) => {
-      const data = res.results;
-      container.innerHTML = "";
-      displayMovies(data, container);
-    })
-    .catch((err) => console.log(err));
-}
-
-// Fetch popular movies on load (only when page is loaded or refreshed)
-function fetchPopularMovies() {
-  fetch("https://api.themoviedb.org/3/movie/popular?language=en-US&page=1", options)
-    .then((res) => res.json())
-    .then((res) => {
-      const data = res.results;
-      popularSlider.innerHTML = "";
-      displayPopularMovies(data, popularSlider);
-    })
-    .catch((err) => console.log(err));
-}
 
 // Display popular movies in slider (only on initial load)
-function displayPopularMovies(data, container) {
-  data.forEach((val) => {
-    const imgBox = document.createElement("div");
-    imgBox.classList.add("movie-card");
-
-    const img = document.createElement("img");
-    img.src = `https://image.tmdb.org/t/p/w500/${val.backdrop_path}`;
-    img.alt = val.title;
-
-    const title = document.createElement("h3");
-    title.textContent = val.title;
-    title.style.fontSize = "1rem";
-    title.style.marginTop = "10px";
-
-    imgBox.append(img, title);
-    container.appendChild(imgBox);
+function displayPopularMovies(movies, container) {
+  container.innerHTML = ""; // clear existing cards
+  movies.forEach((movie) => {
+    const movieCard = document.createElement("div");
+    movieCard.classList.add("movie-card");
+    movieCard.innerHTML = `
+      <img src="https://image.tmdb.org/t/p/w500${movie.poster_path}" alt="${movie.title}" />
+      <h2>${movie.title}</h2>
+      <p>${movie.overview || "No description available."}</p>
+    `;
+    container.appendChild(movieCard);
   });
-
-  // Initialize the auto-slide functionality
-  autoSlide();
 }
+
 
 // Display other movies (like search or genre)
 function displayMovies(data, container) {
@@ -131,14 +64,35 @@ function displayMovies(data, container) {
 }
 
 // Filter search
-searchInput.addEventListener("input", () => {
-  const searchValue = searchInput.value.toLowerCase();
-  const cards = document.querySelectorAll(".movie-card");
+function fetchSearchResults(query) {
+  fetch(
+    `https://api.themoviedb.org/3/search/movie?query=${encodeURIComponent(query)}&include_adult=false&language=en-US&page=1`,
+    options
+  )
+    .then((res) => res.json())
+    .then((data) => {
+      if (data.results.length > 0) {
+        displayMovies(data.results, container);
+      } else {
+        container.innerHTML = "<p>No results found.</p>";
+      }
+    })
+    .catch((err) => console.error("Search error:", err));
+}
 
-  cards.forEach((card) => {
-    const title = card.querySelector("h2, h3").textContent.toLowerCase();
-    card.style.display = title.includes(searchValue) ? "block" : "none";
-  });
+let searchTimeout;
+
+searchInput.addEventListener("input", () => {
+  const query = searchInput.value.trim();
+  clearTimeout(searchTimeout);
+
+  searchTimeout = setTimeout(() => {
+    if (query.length > 1) {
+      fetchSearchResults(query);
+    } else {
+      fetchPopularMovies(); // fallback to popular
+    }
+  }, 500);
 });
 
 // Theme toggle
@@ -166,23 +120,21 @@ modeToggle.addEventListener("click", () => {
   }
 });
 
-// Auto-slide function for the popular slider
-function autoSlide() {
-  const slider = document.getElementById("popular-slider");
-  const scrollWidth = slider.scrollWidth;
-  const clientWidth = slider.clientWidth;
+document.addEventListener("DOMContentLoaded", () => {
+  fetchMovies("popular", "popular-slider");
+  fetchMovies("top_rated", "top-rated-slider");
+  fetchMovies("upcoming", "upcoming-slider");
+  fetchMovies("now_playing", "now-playing-slider");
+});
 
-  setInterval(() => {
-    slider.scrollLeft += clientWidth;
-
-    // If the slider has reached the end, reset to the start
-    if (slider.scrollLeft >= scrollWidth - clientWidth) {
-      slider.scrollLeft = 0;
-    }
-  }, 2000);
+function fetchMovies(type, containerId) {
+  fetch(`https://api.themoviedb.org/3/movie/${type}?language=en-US&page=1`, options)
+    .then((res) => res.json())
+    .then((res) => {
+      const data = res.results;
+      const container = document.getElementById(containerId);
+      displayPopularMovies(data, container);
+    })
+    .catch((err) => console.log(err));
 }
 
-// Load popular movies only when the page is loaded or refreshed
-document.addEventListener("DOMContentLoaded", () => {
-  fetchPopularMovies(); // Fetch popular movies only on page load
-});
