@@ -1,0 +1,35 @@
+.slider {
+  margin-bottom: 40px;
+}
+
+.slider h2 {
+  margin-bottom: 15px;
+  font-size: 1.5rem;
+}
+
+.movie-container {
+  display: flex;
+  overflow-x: auto;
+  gap: 15px;
+  padding-bottom: 10px;
+}
+
+.movie-card {
+  min-width: 150px;
+  background: #222;
+  border-radius: 10px;
+  overflow: hidden;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.movie-card img {
+  width: 100%;
+  display: block;
+  border-bottom: 2px solid #444;
+}
+
+.movie-card h3 {
+  padding: 10px;
+  font-size: 1rem;
+}

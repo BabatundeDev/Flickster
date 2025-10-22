@@ -1,0 +1,14 @@
+body.dark {
+  background: #111;
+  color: #fff;
+}
+
+body.light {
+  background: #fff;
+  color: #111;
+}
+
+.App {
+  font-family: Arial, sans-serif;
+  padding: 20px;
+}
